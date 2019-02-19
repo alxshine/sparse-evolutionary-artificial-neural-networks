@@ -1,0 +1,4 @@
+Epochs are depent on previous epochs -> parallelism hard
+Can we run different evolutions in parallel and choose the best one?
+Can we somehow average different SET evolutions?
+Can we move the entire weight evolution to C or accelerate it somehow?
