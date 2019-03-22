@@ -46,7 +46,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras import optimizers
 import numpy as np
 from keras import backend as K
-from keras_contrib.layers.advanced_activations import SReLU
+from keras_contrib.layers.advanced_activations.srelu import SReLU
 from keras.datasets import cifar10
 from keras.utils import np_utils
 
