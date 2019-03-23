@@ -194,7 +194,7 @@ class SET_MLP_CIFAR10:
         self.w2[0] = self.w2[0] * self.wm2Core
         self.w3[0] = self.w3[0] * self.wm3Core
 
-    def train(self):
+    def train(self, starting_epoch=0):
         # read CIFAR10 data
         [x_train,x_test,y_train,y_test]=self.read_data()
 
@@ -218,10 +218,13 @@ class SET_MLP_CIFAR10:
         self.accuracies_per_epoch=[]
         checkpoint = ModelCheckpoint(SET_MLP_CIFAR10.file_path, monitor='val_acc', save_weights_only=1, verbose=1)
         callbacks = [ checkpoint ]
-        for epoch in range(0,self.maxepoches):
+        for epoch in range(starting_epoch, self.maxepoches):
 
             sgd = optimizers.SGD(lr=self.learning_rate, momentum=self.momentum)
             self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+            if starting_epoch > 0 and epoch == starting_epoch:
+                print(f"Loading weights from {SET_MLP_CIFAR10.file_path}")
+                self.model.load_weights(SET_MLP_CIFAR10.file_path)
 
             historytemp = self.model.fit_generator(datagen.flow(x_train, y_train,
                                              batch_size=self.batch_size),
