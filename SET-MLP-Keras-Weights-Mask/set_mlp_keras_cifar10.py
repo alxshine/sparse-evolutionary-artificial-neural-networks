@@ -216,7 +216,7 @@ class SET_MLP_CIFAR10:
 
         # training process in a for loop
         self.accuracies_per_epoch=[]
-        checkpoint = ModelCheckpoint(SET_MLP_CIFAR10.file_path, monitor='val_acc', verbose=1)
+        checkpoint = ModelCheckpoint(SET_MLP_CIFAR10.file_path, monitor='val_acc', save_weights_only=1, verbose=1)
         callbacks = [ checkpoint ]
         for epoch in range(0,self.maxepoches):
 
