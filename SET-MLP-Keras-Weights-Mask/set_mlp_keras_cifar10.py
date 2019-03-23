@@ -43,6 +43,7 @@ from __future__ import print_function
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.callbacks import ModelCheckpoint
 from keras import optimizers
 import numpy as np
 from keras import backend as K
@@ -96,6 +97,7 @@ def createWeightsMask(epsilon,noRows, noCols):
 
 
 class SET_MLP_CIFAR10:
+    file_path = "checkpoints/cifar_set.hdf5"
     def __init__(self):
         # set model parameters
         self.epsilon = 20 # control the sparsity level as discussed in the paper
@@ -193,7 +195,6 @@ class SET_MLP_CIFAR10:
         self.w3[0] = self.w3[0] * self.wm3Core
 
     def train(self):
-
         # read CIFAR10 data
         [x_train,x_test,y_train,y_test]=self.read_data()
 
@@ -215,6 +216,8 @@ class SET_MLP_CIFAR10:
 
         # training process in a for loop
         self.accuracies_per_epoch=[]
+        checkpoint = ModelCheckpoint(SET_MLP_CIFAR10.file_path, monitor='val_acc', verbose=1)
+        callbacks = [ checkpoint ]
         for epoch in range(0,self.maxepoches):
 
             sgd = optimizers.SGD(lr=self.learning_rate, momentum=self.momentum)
@@ -224,6 +227,7 @@ class SET_MLP_CIFAR10:
                                              batch_size=self.batch_size),
                                 steps_per_epoch=x_train.shape[0]//self.batch_size,
                                 epochs=epoch,
+                                                   callbacks = callbacks,
                                 validation_data=(x_test, y_test),
                                  initial_epoch=epoch-1, verbose=1)
 
