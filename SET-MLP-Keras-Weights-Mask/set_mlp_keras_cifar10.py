@@ -230,10 +230,17 @@ class SET_MLP_CIFAR10:
         for epoch in range(starting_epoch, self.maxepoches):
             sgd = optimizers.SGD(lr=self.learning_rate, momentum=self.momentum)
 
-            if starting_epoch > 0 and epoch == starting_epoch:
-                print("Loading weights from epoch {:04}".format(epoch))
-                self.loadWeights(starting_epoch)
-                epoch += 1
+            rerunning = False
+            try:
+                print("Trying to load weights from a previous iteration of current epoch")
+                self.loadWeights(epoch)
+                rerunning = True
+                print("SUCCESS")
+            except:
+                if epoch > 0:
+                    print("Failed, loading weights from epoch {:04}".format(epoch-1))
+                    self.loadWeights(epoch-1)
+
             self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
             historytemp = self.model.fit_generator(datagen.flow(x_train, y_train,
@@ -247,7 +254,9 @@ class SET_MLP_CIFAR10:
 
             #ugly hack to avoid tensorflow memory increase for multiple fit_generator calls. Theano shall work more nicely this but it is outdated in general
             self.weightsEvolution()
-            self.saveWeights(epoch)
+            if not rerunning:
+                print("Saving weights")
+                self.saveWeights(epoch)
             K.clear_session()
             self.create_model()
 
