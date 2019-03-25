@@ -51,8 +51,8 @@ from keras_contrib.layers.advanced_activations.srelu import SReLU
 from keras.datasets import cifar10
 from keras.utils import np_utils
 import tensorflow as tf
-import gc
 import sys
+import json
 
 class Constraint(object):
 
@@ -98,7 +98,6 @@ def createWeightsMask(epsilon,noRows, noCols):
 
 
 class SET_MLP_CIFAR10:
-    file_path = "checkpoints/cifar_set.hdf5"
     def __init__(self, starting_epoch=0):
         # set model parameters
         self.epsilon = 20 # control the sparsity level as discussed in the paper
@@ -176,6 +175,17 @@ class SET_MLP_CIFAR10:
 
         return [rewiredWeights, weightMaskCore]
 
+    def saveWeights(self, epoch):
+        base_path = 'checkpoints/epoch_{:04}-'.format(epoch)
+        for layer in self.model.layers:
+            np.save(base_path+layer.name, layer.get_weights())
+
+    def loadWeights(self, epoch):
+        base_path = 'checkpoints/epoch_{:04}-'.format(epoch)
+        for layer in self.model.layers:
+            weights = np.load(base_path+layer.name+'.npy')
+            layer.set_weights(weights)
+
     def weightsEvolution(self):
         # this represents the core of the SET procedure. It removes the weights closest to zero in each layer and add new random weights
         self.w1 = self.model.get_layer("sparse_1").get_weights()
@@ -217,21 +227,19 @@ class SET_MLP_CIFAR10:
 
         # training process in a for loop
         self.accuracies_per_epoch=[]
-        checkpoint = ModelCheckpoint(SET_MLP_CIFAR10.file_path, monitor='val_acc', save_weights_only=1, verbose=1)
-        callbacks = [ checkpoint ]
         for epoch in range(starting_epoch, self.maxepoches):
             sgd = optimizers.SGD(lr=self.learning_rate, momentum=self.momentum)
-            self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
             if starting_epoch > 0 and epoch == starting_epoch:
-                print("Loading weights from {}".format(SET_MLP_CIFAR10.file_path))
-                self.model.load_weights(SET_MLP_CIFAR10.file_path, by_name=True)
+                print("Loading weights from epoch {:04}".format(epoch))
+                self.loadWeights(starting_epoch)
+                epoch += 1
+            self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
             historytemp = self.model.fit_generator(datagen.flow(x_train, y_train,
                                              batch_size=self.batch_size),
                                 steps_per_epoch=x_train.shape[0]//self.batch_size,
                                 epochs=epoch,
-                                                   callbacks = callbacks,
                                 validation_data=(x_test, y_test),
                                  initial_epoch=epoch-1, verbose=1)
 
@@ -239,6 +247,7 @@ class SET_MLP_CIFAR10:
 
             #ugly hack to avoid tensorflow memory increase for multiple fit_generator calls. Theano shall work more nicely this but it is outdated in general
             self.weightsEvolution()
+            self.saveWeights(epoch)
             K.clear_session()
             self.create_model()
 
