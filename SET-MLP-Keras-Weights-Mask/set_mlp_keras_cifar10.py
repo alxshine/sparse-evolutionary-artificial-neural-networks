@@ -52,6 +52,7 @@ from keras.datasets import cifar10
 from keras.utils import np_utils
 import tensorflow as tf
 import gc
+import sys
 
 class Constraint(object):
 
@@ -98,7 +99,7 @@ def createWeightsMask(epsilon,noRows, noCols):
 
 class SET_MLP_CIFAR10:
     file_path = "checkpoints/cifar_set.hdf5"
-    def __init__(self):
+    def __init__(self, starting_epoch=0):
         # set model parameters
         self.epsilon = 20 # control the sparsity level as discussed in the paper
         self.zeta = 0.3 # the fraction of the weights removed
@@ -128,7 +129,7 @@ class SET_MLP_CIFAR10:
         self.create_model()
 
         # train the SET-MLP model
-        self.train()
+        self.train(starting_epoch=starting_epoch)
 
 
     def create_model(self):
@@ -219,12 +220,12 @@ class SET_MLP_CIFAR10:
         checkpoint = ModelCheckpoint(SET_MLP_CIFAR10.file_path, monitor='val_acc', save_weights_only=1, verbose=1)
         callbacks = [ checkpoint ]
         for epoch in range(starting_epoch, self.maxepoches):
-
             sgd = optimizers.SGD(lr=self.learning_rate, momentum=self.momentum)
             self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+
             if starting_epoch > 0 and epoch == starting_epoch:
-                print(f"Loading weights from {SET_MLP_CIFAR10.file_path}")
-                self.model.load_weights(SET_MLP_CIFAR10.file_path)
+                print("Loading weights from {}".format(SET_MLP_CIFAR10.file_path))
+                self.model.load_weights(SET_MLP_CIFAR10.file_path, by_name=True)
 
             historytemp = self.model.fit_generator(datagen.flow(x_train, y_train,
                                              batch_size=self.batch_size),
@@ -261,9 +262,12 @@ class SET_MLP_CIFAR10:
         return [x_train, x_test, y_train, y_test]
 
 if __name__ == '__main__':
+    starting_epoch = 0
+    if len(sys.argv) > 1:
+        starting_epoch = int(sys.argv[1])
 
     # create and run a SET-MLP model on CIFAR10
-    model=SET_MLP_CIFAR10()
+    model=SET_MLP_CIFAR10(starting_epoch)
 
     # save accuracies over for all training epochs
     # in "results" folder you can find the output of running this file
