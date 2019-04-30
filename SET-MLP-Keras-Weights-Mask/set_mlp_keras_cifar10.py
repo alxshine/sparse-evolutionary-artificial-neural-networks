@@ -175,17 +175,6 @@ class SET_MLP_CIFAR10:
 
         return [rewiredWeights, weightMaskCore]
 
-    def saveWeights(self, epoch):
-        base_path = 'checkpoints/epoch_{:04}-'.format(epoch)
-        for layer in self.model.layers:
-            np.save(base_path+layer.name, layer.get_weights())
-
-    def loadWeights(self, epoch):
-        base_path = 'checkpoints/epoch_{:04}-'.format(epoch)
-        for layer in self.model.layers:
-            weights = np.load(base_path+layer.name+'.npy')
-            layer.set_weights(weights)
-
     def weightsEvolution(self):
         # this represents the core of the SET procedure. It removes the weights closest to zero in each layer and add new random weights
         self.w1 = self.model.get_layer("sparse_1").get_weights()
@@ -230,17 +219,6 @@ class SET_MLP_CIFAR10:
         for epoch in range(starting_epoch, self.maxepoches):
             sgd = optimizers.SGD(lr=self.learning_rate, momentum=self.momentum)
 
-            rerunning = False
-            try:
-                print("Trying to load weights from a previous iteration of current epoch")
-                self.loadWeights(epoch)
-                rerunning = True
-                print("SUCCESS")
-            except:
-                if epoch > 0:
-                    print("Failed, loading weights from epoch {:04}".format(epoch-1))
-                    self.loadWeights(epoch-1)
-
             self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
             historytemp = self.model.fit_generator(datagen.flow(x_train, y_train,
@@ -254,9 +232,6 @@ class SET_MLP_CIFAR10:
 
             #ugly hack to avoid tensorflow memory increase for multiple fit_generator calls. Theano shall work more nicely this but it is outdated in general
             self.weightsEvolution()
-            if not rerunning:
-                print("Saving weights")
-                self.saveWeights(epoch)
             K.clear_session()
             self.create_model()
 
@@ -280,6 +255,7 @@ class SET_MLP_CIFAR10:
         return [x_train, x_test, y_train, y_test]
 
 if __name__ == '__main__':
+    K.clear_session()
     starting_epoch = 0
     if len(sys.argv) > 1:
         starting_epoch = int(sys.argv[1])
