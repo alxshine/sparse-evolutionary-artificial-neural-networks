@@ -232,7 +232,7 @@ class SET_MLP_CIFAR10:
 
             #ugly hack to avoid tensorflow memory increase for multiple fit_generator calls. Theano shall work more nicely this but it is outdated in general
             self.weightsEvolution()
-            K.clear_session()
+            #K.clear_session()
             self.create_model()
 
         self.accuracies_per_epoch=np.asarray(self.accuracies_per_epoch)
@@ -255,7 +255,7 @@ class SET_MLP_CIFAR10:
         return [x_train, x_test, y_train, y_test]
 
 if __name__ == '__main__':
-    K.clear_session()
+    #K.clear_session()
     starting_epoch = 0
     if len(sys.argv) > 1:
         starting_epoch = int(sys.argv[1])
